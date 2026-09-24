@@ -1,0 +1,21 @@
+{
+  "short_name": "BIS Assistant",
+  "name": "BIS Intelligent Assistant - SIH 2026",
+  "description": "AI-Powered Assistant for Indian Standards and BIS Services",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "32x32"
+    },
+    {
+      "src": "/logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#FFFFFF",
+  "theme_color": "#14367A",
+  "display": "standalone"
+}

@@ -1,0 +1,13 @@
+{
+  "network": "A network error occurred. Please check your connection.",
+  "timeout": "The request timed out.",
+  "serverError": "A server error occurred. Please try again later.",
+  "contractError": "An unexpected error occurred while processing the data.",
+  "notFound": "The requested resource was not found.",
+  "unauthorized": "You are not authorized to perform this action.",
+  "validationError": "Invalid input provided.",
+  "unknownError": "An unknown error occurred.",
+  "chatError": "Failed to send message.",
+  "searchError": "Failed to perform search.",
+  "rateLimited": "Too many requests. Please slow down."
+}

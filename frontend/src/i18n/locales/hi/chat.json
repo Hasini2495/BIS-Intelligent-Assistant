@@ -1,0 +1,42 @@
+{
+  "welcome.title": "बीआईएस असिस्टेंट में आपका स्वागत है",
+  "welcome.subtitle": "भारतीय मानकों और बीआईएस सेवाओं के बारे में प्रश्न पूछें",
+  "welcome.groundingNote": "सभी उत्तर आधिकारिक दस्तावेजों पर आधारित हैं।",
+  "composer.placeholder": "अपना संदेश यहाँ टाइप करें...",
+  "composer.sendHint": "भेजने के लिए Enter दबाएं",
+  "composer.charCount": "{{current}}/{{max}}",
+  "examplePrompts": [
+    "आईएस 456 के लिए आवश्यकताएं क्या हैं?",
+    "सोने के लिए हॉलमार्किंग प्रक्रिया समझाएं।",
+    "आईएसआई मार्क प्रमाणन कैसे प्राप्त करें?",
+    "पीने के पानी का मानक क्या है?",
+    "दिल्ली में एनएबीएल मान्यता प्राप्त प्रयोगशालाएं खोजें।"
+  ],
+  "loading.understanding": "प्रश्न को समझा जा रहा है...",
+  "loading.searching": "दस्तावेज़ों की खोज की जा रही है...",
+  "loading.reviewing": "साक्ष्यों की समीक्षा की जा रही है...",
+  "loading.composing": "उत्तर तैयार किया जा रहा है...",
+  "insufficient.title": "अपर्याप्त जानकारी",
+  "insufficient.body": "मुझे इस प्रश्न का उत्तर देने के लिए पर्याप्त प्रासंगिक आधिकारिक जानकारी नहीं मिली।",
+  "insufficient.suggestions": "आप अपने प्रश्न को फिर से पूछने या आधिकारिक बीआईएस वेबसाइट की जांच करने का प्रयास कर सकते हैं।",
+  "feedback.helpful": "मददगार",
+  "feedback.notHelpful": "मददगार नहीं",
+  "feedback.commentPlaceholder": "वैकल्पिक प्रतिक्रिया...",
+  "feedback.reasons": {
+    "inaccurate": "ग़लत",
+    "missing_source": "स्रोत गायब है",
+    "incomplete": "अपूर्ण",
+    "wrong_standard": "गलत मानक",
+    "hard_to_understand": "समझने में मुश्किल",
+    "wrong_language": "गलत भाषा",
+    "other": "अन्य"
+  },
+  "feedback.submitted": "प्रतिक्रिया सफलतापूर्वक सबमिट की गई।",
+  "messages.copy": "कॉपी करें",
+  "messages.share": "साझा करें",
+  "messages.regenerate": "पुनः उत्पन्न करें",
+  "sources.title": "स्रोत",
+  "sources.viewAll": "सभी स्रोत देखें",
+  "sources.panel": "स्रोत पैनल",
+  "relatedQuestions.title": "संबंधित प्रश्न"
+}

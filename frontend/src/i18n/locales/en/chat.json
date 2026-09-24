@@ -1,0 +1,42 @@
+{
+  "welcome.title": "Welcome to BIS Assistant",
+  "welcome.subtitle": "Ask questions about Indian Standards and BIS Services",
+  "welcome.groundingNote": "All answers are grounded in official documentation.",
+  "composer.placeholder": "Type your message here...",
+  "composer.sendHint": "Press Enter to send",
+  "composer.charCount": "{{current}}/{{max}}",
+  "examplePrompts": [
+    "What are the requirements for IS 456?",
+    "Explain the hallmarking process for gold.",
+    "How to get ISI mark certification?",
+    "What is the standard for drinking water?",
+    "Find NABL accredited labs in Delhi."
+  ],
+  "loading.understanding": "Understanding query...",
+  "loading.searching": "Searching documents...",
+  "loading.reviewing": "Reviewing evidence...",
+  "loading.composing": "Composing response...",
+  "insufficient.title": "Insufficient Information",
+  "insufficient.body": "I could not find enough relevant official information to answer this query.",
+  "insufficient.suggestions": "You can try rephrasing your question or checking the official BIS website.",
+  "feedback.helpful": "Helpful",
+  "feedback.notHelpful": "Not Helpful",
+  "feedback.commentPlaceholder": "Optional feedback...",
+  "feedback.reasons": {
+    "inaccurate": "Inaccurate",
+    "missing_source": "Missing Source",
+    "incomplete": "Incomplete",
+    "wrong_standard": "Wrong Standard",
+    "hard_to_understand": "Hard to Understand",
+    "wrong_language": "Wrong Language",
+    "other": "Other"
+  },
+  "feedback.submitted": "Feedback submitted successfully.",
+  "messages.copy": "Copy",
+  "messages.share": "Share",
+  "messages.regenerate": "Regenerate",
+  "sources.title": "Sources",
+  "sources.viewAll": "View All Sources",
+  "sources.panel": "Source Panel",
+  "relatedQuestions.title": "Related Questions"
+}

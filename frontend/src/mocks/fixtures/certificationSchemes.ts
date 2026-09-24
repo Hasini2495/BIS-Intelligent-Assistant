@@ -1,0 +1,6 @@
+export const certificationSchemesFixture = [
+  { id: 'scheme-1', name: 'ISI Mark / Product Certification', description: 'Product certification scheme.', audience: ['industry'], isMandatoryForSomeProducts: true, eligibility: [], process: [], requiredDocuments: [], testingRequirements: [], faqs: [], relatedStandardIds: [], sources: [], isDemo: true },
+  { id: 'scheme-2', name: 'Compulsory Registration Scheme (CRS)', description: 'CRS scheme.', audience: ['industry'], isMandatoryForSomeProducts: true, eligibility: [], process: [], requiredDocuments: [], testingRequirements: [], faqs: [], relatedStandardIds: [], sources: [], isDemo: true },
+  { id: 'scheme-3', name: 'Foreign Manufacturers Certification (FMCS)', description: 'FMCS scheme.', audience: ['foreign_manufacturer'], isMandatoryForSomeProducts: true, eligibility: [], process: [], requiredDocuments: [], testingRequirements: [], faqs: [], relatedStandardIds: [], sources: [], isDemo: true },
+  { id: 'scheme-4', name: 'Hallmarking', description: 'Hallmarking scheme.', audience: ['industry'], isMandatoryForSomeProducts: true, eligibility: [], process: [], requiredDocuments: [], testingRequirements: [], faqs: [], relatedStandardIds: [], sources: [], isDemo: true }
+];

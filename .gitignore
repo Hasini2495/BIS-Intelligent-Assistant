@@ -1,0 +1,59 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.Python
+env/
+venv/
+.venv/
+pip-wheel-metadata/
+
+# Build output
+frontend/dist/
+backend/dist/
+*.egg-info/
+
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+playwright-report/
+test-results/
+.nyc_output/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Database (local dev)
+*.db
+*.sqlite
+*.sqlite3
+
+# Docker volumes
+docker/volumes/
+
+# OS files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Misc
+*.bak
+*.tmp
+.cache/

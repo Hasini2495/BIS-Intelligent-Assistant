@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" fill="none">
+  <rect width="40" height="40" x="4" y="4" rx="8" fill="#14367A"/>
+  <path d="M24 10L14 15V21C14 27.5 18.3 33.5 24 35C29.7 33.5 34 27.5 34 21V15L24 10Z" fill="#1B4693" stroke="#FFFFFF" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M21 22L23.5 24.5L28 19" stroke="#E8850C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="52" y="22" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="700" fill="#14367A" letter-spacing="-0.02em">BIS Intelligent Assistant</text>
+  <text x="52" y="36" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="500" fill="#64748B">Indian Standards &amp; Services</text>
+</svg>

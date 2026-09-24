@@ -57,3 +57,5 @@ Desktop.ini
 *.bak
 *.tmp
 .cache/
+# TypeScript build info
+*.tsbuildinfo

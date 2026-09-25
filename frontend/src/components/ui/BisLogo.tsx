@@ -28,7 +28,8 @@ export function BisLogo({
       className={cn('shrink-0 select-none transition-transform', iconDimensions)}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      aria-label="Bureau of Indian Standards Emblem"
+      aria-hidden="true"
+      focusable="false"
     >
       {/* Outer rounded triangle */}
       <path

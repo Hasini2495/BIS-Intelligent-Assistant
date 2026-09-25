@@ -1,20 +1,59 @@
-import { Download, FileText, Printer } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Download, FileText, Printer, CheckCircle2 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { documentsFixture } from '@/mocks/fixtures/documents';
+import { documentsService } from '@/services/documentsService';
 
 export default function DocumentViewerPage() {
   const { documentId } = useParams();
-  const doc = documentsFixture.find((d) => d.id === documentId) || documentsFixture[0]!;
+  const [docTitle, setDocTitle] = useState('Bureau of Indian Standards Document');
+  const [docType, setDocType] = useState('Standard');
+  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
+
+  useEffect(() => {
+    async function loadDoc() {
+      if (!documentId) return;
+      try {
+        const d = await documentsService.getById(documentId);
+        if (d && d.title) {
+          setDocTitle(d.title);
+          setDocType(d.documentType || 'Document');
+        }
+      } catch {
+        const fixture = documentsFixture.find((d) => d.id === documentId);
+        if (fixture) {
+          setDocTitle(fixture.title);
+          setDocType(fixture.documentType);
+        }
+      }
+    }
+    loadDoc();
+  }, [documentId]);
+
+  const handleDownload = async () => {
+    if (!documentId) return;
+    setIsDownloading(true);
+    try {
+      await documentsService.download(documentId, `${docTitle}.pdf`);
+      setDownloadSuccess(true);
+      setTimeout(() => setDownloadSuccess(false), 3000);
+    } catch {
+      window.open(`/api/documents/${documentId}/download`, '_blank');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <div className="space-y-6 font-sans max-w-5xl mx-auto">
       <PageHeader
-        title={doc.title}
-        description={`Authoritative ${doc.documentType.replace('_', ' ')} issued under Bureau of Indian Standards.`}
+        title={docTitle}
+        description={`Authoritative ${docType.replace('_', ' ')} issued under Bureau of Indian Standards.`}
         breadcrumbs={[
           { label: 'Document Center', href: '/documents' },
-          { label: doc.title },
+          { label: docTitle },
         ]}
         actions={
           <div className="flex items-center gap-2">
@@ -28,15 +67,23 @@ export default function DocumentViewerPage() {
             </button>
             <button
               type="button"
-              onClick={() => alert(`Downloading ${doc.title}`)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#063b73] px-4 py-2 text-xs font-bold text-white hover:bg-[#0B4A8F] shadow-xs"
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#063b73] px-4 py-2 text-xs font-bold text-white hover:bg-[#0B4A8F] shadow-xs disabled:opacity-60"
             >
               <Download className="h-4 w-4" />
-              <span>Download PDF</span>
+              <span>{isDownloading ? 'Downloading...' : 'Download PDF'}</span>
             </button>
           </div>
         }
       />
+
+      {downloadSuccess && (
+        <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800 font-semibold">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+          Document PDF downloaded successfully!
+        </div>
+      )}
 
       <div className="rounded-2xl border border-slate-200 bg-white p-6 sm:p-10 shadow-xs">
         <div className="border-b border-slate-100 pb-5 flex items-center justify-between">
@@ -45,8 +92,8 @@ export default function DocumentViewerPage() {
               <FileText className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-slate-900">{doc.title}</h2>
-              <p className="text-xs text-slate-400 font-mono">Document ID: {doc.id}</p>
+              <h2 className="text-base font-bold text-slate-900">{docTitle}</h2>
+              <p className="text-xs text-slate-400 font-mono">Document ID: {documentId}</p>
             </div>
           </div>
           <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">

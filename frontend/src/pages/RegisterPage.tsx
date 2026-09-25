@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Lock, Mail, Shield, User } from 'lucide-react';
+import { CheckCircle2, Lock, Mail, Shield, User, AlertCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BisLogo } from '@/components/ui/BisLogo';
+import { authService } from '@/services/authService';
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState('');
@@ -11,23 +12,42 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
+
     if (password !== confirmPassword) {
-      alert('Passwords do not match');
+      setErrorMessage('Passwords do not match. Please re-enter matching passwords.');
       return;
     }
     if (!agreeTerms) {
-      alert('Please agree to the Terms & Conditions');
+      setErrorMessage('Please agree to the Terms & Conditions and Privacy Policy.');
       return;
     }
+
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      const res = await authService.register({
+        name: fullName.trim(),
+        email: emailOrMobile.trim(),
+        password: password,
+        role: userType === 'officer' ? 'admin' : 'user',
+        organization: userType === 'msme' ? 'MSME Enterprise' : (userType === 'testing_lab' ? 'Testing Lab' : undefined)
+      });
+
+      if (res.accessToken) {
+        navigate('/');
+      } else {
+        setErrorMessage(res.message || 'Registration failed. Please try again.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.detail || err?.message || 'Registration failed. This email may already be registered.');
+    } finally {
       setIsLoading(false);
-      navigate('/');
-    }, 400);
+    }
   };
 
   return (
@@ -75,7 +95,7 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Right Form Card Panel (Reference Screen 03) */}
+      {/* Right Form Card Panel */}
       <div className="flex flex-1 items-center justify-center p-6 sm:p-12">
         <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
           <div className="mb-6 text-center sm:text-left">
@@ -86,6 +106,13 @@ export default function RegisterPage() {
               Join BIS AI Assistant platform
             </p>
           </div>
+
+          {errorMessage && (
+            <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3.5 text-xs text-red-800">
+              <AlertCircle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
+              <div>{errorMessage}</div>
+            </div>
+          )}
 
           <form onSubmit={handleRegister} className="space-y-3.5">
             {/* Full Name */}
@@ -130,17 +157,17 @@ export default function RegisterPage() {
             {/* Email / Mobile */}
             <div>
               <label htmlFor="reg-contact" className="block text-xs font-semibold text-slate-700 mb-1">
-                Email / Mobile Number
+                Email Address
               </label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                   id="reg-contact"
-                  type="text"
+                  type="email"
                   required
                   value={emailOrMobile}
                   onChange={(e) => setEmailOrMobile(e.target.value)}
-                  placeholder="Enter your email or mobile number"
+                  placeholder="name@example.com"
                   className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 outline-none transition focus:border-[#063b73] focus:bg-white focus:ring-2 focus:ring-blue-100"
                 />
               </div>
@@ -159,7 +186,7 @@ export default function RegisterPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Create Password"
+                  placeholder="Create Password (min 6 characters)"
                   className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 outline-none transition focus:border-[#063b73] focus:bg-white focus:ring-2 focus:ring-blue-100"
                 />
               </div>
@@ -196,13 +223,13 @@ export default function RegisterPage() {
               />
               <label htmlFor="agree-terms" className="ml-2 block text-xs text-slate-600 leading-tight">
                 I agree to the{' '}
-                <a href="#terms" onClick={(e) => e.preventDefault()} className="font-semibold text-[#063b73] hover:underline">
+                <span className="font-semibold text-[#063b73]">
                   Terms &amp; Conditions
-                </a>{' '}
+                </span>{' '}
                 and{' '}
-                <a href="#privacy" onClick={(e) => e.preventDefault()} className="font-semibold text-[#063b73] hover:underline">
+                <span className="font-semibold text-[#063b73]">
                   Privacy Policy
-                </a>
+                </span>
               </label>
             </div>
 

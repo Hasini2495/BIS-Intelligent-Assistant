@@ -16,6 +16,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { standardsFixture } from '@/mocks/fixtures/standards';
 import { StandardNumber } from '@/components/domain/StandardNumber';
 import { Modal } from '@/components/ui/Modal';
+import { documentsService } from '@/services/documentsService';
 
 export default function StandardDetailPage() {
   const { standardId } = useParams();
@@ -29,6 +30,8 @@ export default function StandardDetailPage() {
   const [isSaved, setIsSaved] = useState(false);
   const [pdfModalOpen, setPdfModalOpen] = useState(false);
   const [openClauseId, setOpenClauseId] = useState<string | null>('c-1');
+  const [shareNotice, setShareNotice] = useState(false);
+  const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
 
   const toggleClause = (id: string) => {
     setOpenClauseId((prev) => (prev === id ? null : id));
@@ -65,12 +68,13 @@ export default function StandardDetailPage() {
               type="button"
               onClick={() => {
                 navigator.clipboard.writeText(window.location.href);
-                alert('Standard link copied to clipboard!');
+                setShareNotice(true);
+                setTimeout(() => setShareNotice(false), 2500);
               }}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors"
             >
               <Share2 className="h-4 w-4" />
-              <span>Share</span>
+              <span>{shareNotice ? 'Link Copied!' : 'Share'}</span>
             </button>
           </div>
         }
@@ -108,8 +112,8 @@ export default function StandardDetailPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`pb-3 border-b-2 font-bold transition-colors ${activeTab === tab.id
-                  ? 'border-[#063b73] text-[#063b73]'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-[#063b73] text-[#063b73]'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
                 }`}
             >
               {tab.label}
@@ -371,8 +375,14 @@ export default function StandardDetailPage() {
 
               <button
                 type="button"
-                onClick={() => {
-                  alert(`Downloading ${standard.standardNumber} document package.`);
+                onClick={async () => {
+                  try {
+                    await documentsService.download('doc-1', `${standard.standardNumber}.pdf`);
+                    setDownloadNotice(`Downloaded ${standard.standardNumber} document package.`);
+                    setTimeout(() => setDownloadNotice(null), 3500);
+                  } catch {
+                    window.open('/api/documents/doc-1/download', '_blank');
+                  }
                 }}
                 className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-all"
               >
@@ -380,6 +390,9 @@ export default function StandardDetailPage() {
                 <span>Download Standard</span>
               </button>
             </div>
+            {downloadNotice && (
+              <p className="mt-2 text-center text-[11px] font-semibold text-emerald-600">{downloadNotice}</p>
+            )}
           </div>
 
           {/* Quick AI Ask Link */}
@@ -435,8 +448,12 @@ export default function StandardDetailPage() {
             </button>
             <button
               type="button"
-              onClick={() => {
-                alert('Document downloaded successfully.');
+              onClick={async () => {
+                try {
+                  await documentsService.download('doc-1', `${standard.standardNumber}.pdf`);
+                } catch {
+                  window.open('/api/documents/doc-1/download', '_blank');
+                }
                 setPdfModalOpen(false);
               }}
               className="rounded-xl bg-[#063b73] px-4 py-2 text-xs font-bold text-white hover:bg-[#0B4A8F]"

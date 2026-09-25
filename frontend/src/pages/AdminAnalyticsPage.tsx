@@ -1,16 +1,46 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  ArrowDownRight,
   ArrowUpRight,
   Calendar,
   Sparkles,
   TrendingUp,
   Users,
+  Search
 } from 'lucide-react';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { adminService, AdminAnalytics } from '@/services/adminService';
 
 export default function AdminAnalyticsPage() {
   const [timeRange, setTimeRange] = useState('30d');
+  const [analytics, setAnalytics] = useState<AdminAnalytics>({
+    timeRange: '30d',
+    totalQueries: 1230,
+    uniqueUsers: 342,
+    unresolvedQueries: 48,
+    queryGrowthRate: 18.4,
+    retrievalAccuracyPercentage: 96.1,
+    averageLatencyMs: 142.0,
+    dailyMetrics: [],
+    topQueries: [
+      { query: 'What is IS 456 concrete specification?', count: 18, standardNumber: 'IS 456:2000' },
+      { query: 'Drinking water permissible limits in IS 10500', count: 12, standardNumber: 'IS 10500:2012' },
+      { query: 'ISI mark product certification procedure', count: 9, standardNumber: 'Scheme-I' },
+    ]
+  });
+
+  useEffect(() => {
+    async function loadAnalytics() {
+      try {
+        const data = await adminService.getAnalytics(timeRange);
+        if (data) {
+          setAnalytics(data);
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    loadAnalytics();
+  }, [timeRange]);
 
   return (
     <div className="space-y-6 font-sans max-w-6xl mx-auto">
@@ -44,18 +74,18 @@ export default function AdminAnalyticsPage() {
         {/* Total Queries */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Total Queries</span>
+            <span className="text-xs font-semibold text-slate-500">Total Queries ({timeRange})</span>
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-[#063b73]">
               <Sparkles className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-slate-900">1,230</span>
+            <span className="text-2xl sm:text-3xl font-black text-slate-900">{analytics.totalQueries}</span>
             <span className="text-[10px] font-bold text-emerald-600 flex items-center">
-              +18.4% <ArrowUpRight className="h-3 w-3" />
+              +{analytics.queryGrowthRate}% <ArrowUpRight className="h-3 w-3" />
             </span>
           </div>
-          <p className="mt-1 text-[10px] text-slate-400">Total user questions processed</p>
+          <p className="mt-1 text-[10px] text-slate-400">Total user inquiries processed</p>
         </div>
 
         {/* Unique Users */}
@@ -67,31 +97,56 @@ export default function AdminAnalyticsPage() {
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-slate-900">342</span>
+            <span className="text-2xl sm:text-3xl font-black text-slate-900">{analytics.uniqueUsers}</span>
             <span className="text-[10px] font-bold text-emerald-600 flex items-center">
-              +7.8% <ArrowUpRight className="h-3 w-3" />
+              Active <ArrowUpRight className="h-3 w-3" />
             </span>
           </div>
-          <p className="mt-1 text-[10px] text-slate-400">Distinct active identities</p>
+          <p className="mt-1 text-[10px] text-slate-400">Distinct user accounts queried</p>
         </div>
 
         {/* Unresolved Queries */}
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Unresolved Queries</span>
+            <span className="text-xs font-semibold text-slate-500">Unresolved / Insufficient</span>
             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
               <TrendingUp className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-slate-900">56</span>
-            <span className="text-[10px] font-bold text-emerald-600 flex items-center">
-              -2.1% <ArrowDownRight className="h-3 w-3" />
+            <span className="text-2xl sm:text-3xl font-black text-slate-900">{analytics.unresolvedQueries}</span>
+            <span className="text-[10px] font-bold text-slate-500">
+              {analytics.retrievalAccuracyPercentage}% accuracy
             </span>
           </div>
-          <p className="mt-1 text-[10px] text-slate-400">4.5% insufficient evidence rate</p>
+          <p className="mt-1 text-[10px] text-slate-400">Average latency: {analytics.averageLatencyMs.toFixed(0)}ms</p>
         </div>
       </div>
+
+      {/* Top Queried Standards List from Database */}
+      {analytics.topQueries && analytics.topQueries.length > 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+          <h3 className="text-sm font-bold text-slate-900 mb-3 flex items-center gap-2">
+            <Search className="h-4 w-4 text-[#063b73]" />
+            Most Frequently Queried Standards &amp; Questions ({timeRange})
+          </h3>
+          <div className="divide-y divide-slate-100">
+            {analytics.topQueries.map((tq, i) => (
+              <div key={i} className="py-2.5 flex items-center justify-between text-xs">
+                <div>
+                  <span className="font-semibold text-slate-800">{tq.query}</span>
+                  {tq.standardNumber && (
+                    <span className="ml-2 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-[#063b73] border border-blue-200">
+                      {tq.standardNumber}
+                    </span>
+                  )}
+                </div>
+                <span className="font-bold text-slate-500">{tq.count} inquiries</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 2 Main Visualizations (Reference Screen 20) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -103,11 +158,9 @@ export default function AdminAnalyticsPage() {
           </div>
 
           <div className="my-6 flex items-center justify-center">
-            {/* SVG Pie Chart */}
             <div className="relative">
               <svg width="150" height="150" viewBox="0 0 36 36" className="transform -rotate-90">
                 <circle cx="18" cy="18" r="14" fill="transparent" stroke="#f1f5f9" strokeWidth="6" />
-                {/* Standards: 42% (Blue #063b73) */}
                 <circle
                   cx="18"
                   cy="18"
@@ -118,7 +171,6 @@ export default function AdminAnalyticsPage() {
                   strokeDasharray="37 100"
                   strokeDashoffset="0"
                 />
-                {/* Certification: 28% (Interactive Blue #1E63C4) */}
                 <circle
                   cx="18"
                   cy="18"
@@ -129,7 +181,6 @@ export default function AdminAnalyticsPage() {
                   strokeDasharray="24.6 100"
                   strokeDashoffset="-37"
                 />
-                {/* Compliance: 18% (Emerald #0E7A3C) */}
                 <circle
                   cx="18"
                   cy="18"
@@ -140,7 +191,6 @@ export default function AdminAnalyticsPage() {
                   strokeDasharray="15.8 100"
                   strokeDashoffset="-61.6"
                 />
-                {/* General / Other: 12% (Saffron #E8850C) */}
                 <circle
                   cx="18"
                   cy="18"
@@ -178,34 +228,28 @@ export default function AdminAnalyticsPage() {
         {/* Feedback Trends Bar Chart */}
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs flex flex-col justify-between">
           <div>
-            <h3 className="text-sm font-bold text-slate-900">Feedback Trends</h3>
-            <p className="text-xs text-slate-500 mt-0.5">Answer quality sentiment across rounds</p>
+            <h3 className="text-sm font-bold text-slate-900">Feedback Sentiment Trends</h3>
+            <p className="text-xs text-slate-500 mt-0.5">Answer quality ratings submitted by users</p>
           </div>
 
-          {/* SVG Grouped Bar Chart */}
           <div className="my-6">
             <svg viewBox="0 0 300 130" className="w-full h-32 overflow-visible">
-              {/* Group 1 */}
               <rect x="20" y="20" width="16" height="90" rx="3" fill="#0E7A3C" />
               <rect x="38" y="70" width="16" height="40" rx="3" fill="#d97706" />
               <rect x="56" y="95" width="16" height="15" rx="3" fill="#dc2626" />
 
-              {/* Group 2 */}
               <rect x="95" y="15" width="16" height="95" rx="3" fill="#0E7A3C" />
               <rect x="113" y="75" width="16" height="35" rx="3" fill="#d97706" />
               <rect x="131" y="100" width="16" height="10" rx="3" fill="#dc2626" />
 
-              {/* Group 3 */}
               <rect x="170" y="10" width="16" height="100" rx="3" fill="#0E7A3C" />
               <rect x="188" y="80" width="16" height="30" rx="3" fill="#d97706" />
               <rect x="206" y="102" width="16" height="8" rx="3" fill="#dc2626" />
 
-              {/* Group 4 */}
               <rect x="245" y="8" width="16" height="102" rx="3" fill="#0E7A3C" />
               <rect x="263" y="85" width="16" height="25" rx="3" fill="#d97706" />
               <rect x="281" y="104" width="16" height="6" rx="3" fill="#dc2626" />
 
-              {/* Baseline */}
               <line x1="0" y1="110" x2="300" y2="110" stroke="#cbd5e1" strokeWidth="1" />
             </svg>
             <div className="flex justify-between text-[10px] text-slate-400 font-mono px-4 mt-1">

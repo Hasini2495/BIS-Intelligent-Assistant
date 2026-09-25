@@ -19,10 +19,10 @@ export const handlers = [
 
     const defaultAnswer = chatResponsesFixture.default!;
     let answerObj: GroundedAnswer = defaultAnswer;
-    if (query.includes('concrete') || query.includes('456')) answerObj = chatResponsesFixture.concrete ?? defaultAnswer;
-    else if (query.includes('led') || query.includes('bulb')) answerObj = chatResponsesFixture.led ?? defaultAnswer;
+    if (query.includes('water') || query.includes('drinking') || query.includes('10500')) answerObj = chatResponsesFixture.water ?? defaultAnswer;
+    else if (query.includes('concrete') || query.includes('456')) answerObj = chatResponsesFixture.concrete ?? defaultAnswer;
+    else if (query.includes('led') || query.includes('bulb') || query.includes('16102')) answerObj = chatResponsesFixture.led ?? defaultAnswer;
     else if (query.includes('302') || query.includes('clause 7.2')) answerObj = chatResponsesFixture.is302 ?? defaultAnswer;
-    else if (query.includes('water') || query.includes('drinking')) answerObj = chatResponsesFixture.water ?? defaultAnswer;
     else if (query.includes('hallmark') || query.includes('gold')) answerObj = chatResponsesFixture.hallmarking ?? defaultAnswer;
     else if (query.includes('certificat') || query.includes('isi')) answerObj = chatResponsesFixture.certification ?? defaultAnswer;
 

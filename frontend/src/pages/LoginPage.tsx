@@ -1,23 +1,97 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Lock, Mail, Shield } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, Shield, AlertCircle, CheckCircle2, KeyRound } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BisLogo } from '@/components/ui/BisLogo';
+import { authService } from '@/services/authService';
 
 export default function LoginPage() {
-  const [emailOrMobile, setEmailOrMobile] = useState('pavan@example.com');
-  const [password, setPassword] = useState('••••••••');
+  const [emailOrMobile, setEmailOrMobile] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
+
+  // 2FA state
+  const [requires2Fa, setRequires2Fa] = useState(false);
+  const [verificationId, setVerificationId] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState('');
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
+    setInfoMessage(null);
     setIsLoading(true);
-    setTimeout(() => {
+
+    try {
+      const res = await authService.login({
+        email: emailOrMobile.trim(),
+        password: password
+      });
+
+      if (res.requires2Fa && res.verificationId) {
+        setRequires2Fa(true);
+        setVerificationId(res.verificationId);
+        setInfoMessage('Two-Factor Authentication required. Enter the 6-digit verification code.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (res.accessToken) {
+        navigate('/');
+      } else {
+        setErrorMessage(res.message || 'Login failed. Please verify your credentials.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.detail || err?.message || 'Invalid email or password.');
+    } finally {
       setIsLoading(false);
-      navigate('/');
-    }, 400);
+    }
+  };
+
+  const handleVerify2Fa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!verificationId || !otpCode.trim()) return;
+    setErrorMessage(null);
+    setIsVerifyingOtp(true);
+
+    try {
+      const res = await authService.verify2FaLogin(verificationId, otpCode.trim());
+      if (res.accessToken) {
+        navigate('/');
+      } else {
+        setErrorMessage(res.message || 'Invalid or expired 2FA code.');
+      }
+    } catch (err: any) {
+      setErrorMessage(err?.detail || err?.message || 'Verification failed. Please check the code.');
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setErrorMessage(null);
+    setInfoMessage(null);
+    try {
+      const res = await authService.getGoogleOAuthUrl();
+      if (res.configured && res.authUrl) {
+        window.location.href = res.authUrl;
+      } else {
+        setErrorMessage('Google sign-in is not configured on this server. Please use email and password.');
+      }
+    } catch {
+      setErrorMessage('Google authentication service is currently unavailable.');
+    }
+  };
+
+  const handleForgotPassword = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setInfoMessage('If your email is registered with BIS, password reset instructions have been sent.');
   };
 
   return (
@@ -54,97 +128,154 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right Form Card Panel (Reference Screen 02) */}
+      {/* Right Form Card Panel */}
       <div className="flex flex-1 items-center justify-center p-6 sm:p-12">
         <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
           <div className="mb-8 text-center sm:text-left">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Welcome Back
+              {requires2Fa ? 'Two-Factor Verification' : 'Welcome Back'}
             </h1>
             <p className="mt-1 text-xs sm:text-sm text-slate-500">
-              Login to your BIS AI Assistant account
+              {requires2Fa
+                ? 'Enter the 6-digit security code sent to your registered contact'
+                : 'Login to your BIS AI Assistant account'}
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            {/* Email / Mobile */}
-            <div>
-              <label htmlFor="login-email" className="block text-xs font-semibold text-slate-700 mb-1.5">
-                Email / Mobile Number
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  id="login-email"
-                  type="text"
-                  required
-                  value={emailOrMobile}
-                  onChange={(e) => setEmailOrMobile(e.target.value)}
-                  placeholder="Enter your email or mobile number"
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 outline-none transition focus:border-[#063b73] focus:bg-white focus:ring-2 focus:ring-blue-100"
-                />
-              </div>
+          {/* Feedback Banners */}
+          {errorMessage && (
+            <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3.5 text-xs text-red-800">
+              <AlertCircle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
+              <div>{errorMessage}</div>
             </div>
+          )}
+          {infoMessage && (
+            <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-blue-200 bg-blue-50 p-3.5 text-xs text-blue-800">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-blue-600 mt-0.5" />
+              <div>{infoMessage}</div>
+            </div>
+          )}
 
-            {/* Password */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="login-password" className="block text-xs font-semibold text-slate-700">
-                  Password
+          {requires2Fa ? (
+            /* 2FA OTP Form */
+            <form onSubmit={handleVerify2Fa} className="space-y-4">
+              <div>
+                <label htmlFor="otp-input" className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  6-Digit OTP Security Code
                 </label>
-                <a
-                  href="#forgot"
-                  onClick={(e) => { e.preventDefault(); alert('Password reset link sent to registered email.'); }}
-                  className="text-xs font-medium text-[#063b73] hover:underline"
-                >
-                  Forgot password?
-                </a>
+                <div className="relative">
+                  <KeyRound className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    id="otp-input"
+                    type="text"
+                    required
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="Enter 6-digit code"
+                    className="h-11 w-full text-center tracking-widest font-mono text-lg rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-slate-900 outline-none transition focus:border-[#063b73] focus:bg-white focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
               </div>
-              <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+              <button
+                type="submit"
+                disabled={isVerifyingOtp || otpCode.length !== 6}
+                className="mt-2 w-full rounded-xl bg-[#063b73] py-3 text-sm font-bold text-white shadow-sm hover:bg-[#0B4A8F] active:bg-[#042449] transition-all disabled:opacity-50"
+              >
+                {isVerifyingOtp ? 'Verifying Code...' : 'Verify & Continue'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setRequires2Fa(false)}
+                className="w-full text-center text-xs font-semibold text-slate-500 hover:text-slate-800"
+              >
+                Back to email login
+              </button>
+            </form>
+          ) : (
+            /* Standard Login Form */
+            <form onSubmit={handleLogin} className="space-y-4">
+              {/* Email / Mobile */}
+              <div>
+                <label htmlFor="login-email" className="block text-xs font-semibold text-slate-700 mb-1.5">
+                  Email / Mobile Number
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    id="login-email"
+                    type="text"
+                    required
+                    value={emailOrMobile}
+                    onChange={(e) => setEmailOrMobile(e.target.value)}
+                    placeholder="Enter your registered email"
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 text-sm text-slate-900 outline-none transition focus:border-[#063b73] focus:bg-white focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label htmlFor="login-password" className="block text-xs font-semibold text-slate-700">
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleForgotPassword}
+                    className="text-xs font-medium text-[#063b73] hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    id="login-password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-10 text-sm text-slate-900 outline-none transition focus:border-[#063b73] focus:bg-white focus:ring-2 focus:ring-blue-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Remember Me */}
+              <div className="flex items-center pt-1">
                 <input
-                  id="login-password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-10 text-sm text-slate-900 outline-none transition focus:border-[#063b73] focus:bg-white focus:ring-2 focus:ring-blue-100"
+                  id="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300 text-[#063b73] focus:ring-[#063b73]"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+                <label htmlFor="remember-me" className="ml-2 block text-xs text-slate-600">
+                  Remember me on this device
+                </label>
               </div>
-            </div>
 
-            {/* Remember Me */}
-            <div className="flex items-center pt-1">
-              <input
-                id="remember-me"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-[#063b73] focus:ring-[#063b73]"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-xs text-slate-600">
-                Remember me on this device
-              </label>
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="mt-2 w-full rounded-xl bg-[#063b73] py-3 text-sm font-bold text-white shadow-sm hover:bg-[#0B4A8F] active:bg-[#042449] transition-all disabled:opacity-50"
-            >
-              {isLoading ? 'Signing in...' : 'Login'}
-            </button>
-          </form>
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="mt-2 w-full rounded-xl bg-[#063b73] py-3 text-sm font-bold text-white shadow-sm hover:bg-[#0B4A8F] active:bg-[#042449] transition-all disabled:opacity-50"
+              >
+                {isLoading ? 'Signing in...' : 'Login'}
+              </button>
+            </form>
+          )}
 
           {/* Social / SSO Divider */}
           <div className="my-6 flex items-center gap-3">
@@ -158,7 +289,7 @@ export default function LoginPage() {
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
-              onClick={() => navigate('/')}
+              onClick={handleGoogleSignIn}
               className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24">
@@ -184,7 +315,7 @@ export default function LoginPage() {
 
             <button
               type="button"
-              onClick={() => navigate('/')}
+              onClick={() => setErrorMessage('Microsoft SSO is currently reserved for BIS intra-net accounts.')}
               className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 transition-colors"
             >
               <svg className="h-4 w-4" viewBox="0 0 23 23">

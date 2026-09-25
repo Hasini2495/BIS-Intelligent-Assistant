@@ -10,6 +10,7 @@ import {
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
+import { documentsService } from '@/services/documentsService';
 
 interface ComplianceItem {
   id: string;
@@ -218,7 +219,13 @@ export default function ValidationResultPage() {
                   <TableCell>
                     <button
                       type="button"
-                      onClick={() => alert(`Opening evidence file: ${item.evidence}`)}
+                      onClick={async () => {
+                        try {
+                          await documentsService.download('doc-1', item.evidence);
+                        } catch {
+                          window.open('/api/documents/doc-1/download', '_blank');
+                        }
+                      }}
                       className="inline-flex items-center gap-1.5 font-mono text-xs font-semibold text-[#063b73] hover:underline"
                     >
                       <FileText className="h-3.5 w-3.5 text-slate-400" />

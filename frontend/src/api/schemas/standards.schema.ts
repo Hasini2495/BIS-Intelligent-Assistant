@@ -25,29 +25,29 @@ export const StandardClauseSchema: z.ZodType<StandardClauseSchemaType> = Standar
 });
 
 export const StandardSchema = StandardReferenceSchema.extend({
-  year: z.number().optional(),
-  reaffirmedYear: z.number().optional(),
-  revision: z.string().optional(),
-  description: z.string().optional(),
-  scope: z.string().optional(),
+  year: z.number().nullish(),
+  reaffirmedYear: z.number().nullish(),
+  revision: z.string().nullish(),
+  description: z.string().nullish(),
+  scope: z.string().nullish(),
   sectors: z.array(z.string()),
   categories: z.array(z.string()),
-  icsCode: z.string().optional(),
+  icsCode: z.string().nullish(),
   language: z.string(),
-  pageCount: z.number().optional(),
+  pageCount: z.number().nullish(),
   clauses: z.array(StandardClauseSchema),
   relatedStandards: z.array(StandardReferenceSchema.extend({
     relationship: z.enum(['references', 'referenced_by', 'supersedes', 'superseded_by', 'amendment', 'part_of', 'similar']),
-    note: z.string().optional()
+    note: z.string().nullish()
   })),
   certificationRelevance: z.object({
     isCertifiable: z.boolean(),
     schemeIds: z.array(z.string()),
-    isMandatory: z.boolean().optional(),
-    notes: z.string().optional()
-  }).optional(),
-  sourceDocumentId: z.string().optional(),
-  officialUrl: z.string().optional(),
+    isMandatory: z.boolean().nullish(),
+    notes: z.string().nullish()
+  }).nullish(),
+  sourceDocumentId: z.string().nullish(),
+  officialUrl: z.string().nullish(),
   isFullTextAvailable: z.boolean(),
   isDemo: z.boolean()
 });

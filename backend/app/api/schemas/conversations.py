@@ -1,17 +1,22 @@
-from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
-from app.api.schemas.chat import MessageResponse
+from pydantic import Field
+from typing import Optional
+from app.api.schemas.common import CamelModel, PaginatedResponse
 
-class CreateConversationRequest(BaseModel):
-    title: Optional[str] = "New Conversation"
+class CreateConversationRequest(CamelModel):
+    title: str = "New Conversation"
+    language: Optional[str] = "en"
 
-class ConversationResponse(BaseModel):
+class UpdateConversationRequest(CamelModel):
+    title: str
+
+class ConversationResponse(CamelModel):
     id: str
     title: str
-    created_at: str
-    updated_at: Optional[str] = None
-    messages: List[MessageResponse] = []
+    language: str = "en"
+    message_count: int = Field(default=0, alias="messageCount")
+    last_message_preview: Optional[str] = Field(default=None, alias="lastMessagePreview")
+    is_archived: bool = Field(default=False, alias="isArchived")
+    created_at: str = Field(..., alias="createdAt")
+    updated_at: str = Field(..., alias="updatedAt")
 
-class ConversationListResponse(BaseModel):
-    items: List[ConversationResponse]
-    total: int
+ConversationsListResponse = PaginatedResponse[ConversationResponse]

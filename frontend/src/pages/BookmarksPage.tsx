@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   ArrowRight,
   Bookmark,
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { bookmarksService } from '@/services/bookmarksService';
 
 interface SavedItem {
   id: string;
@@ -67,12 +68,39 @@ export default function BookmarksPage() {
   const [bookmarks, setBookmarks] = useState<SavedItem[]>(INITIAL_BOOKMARKS);
   const [activeTab, setActiveTab] = useState<'all' | 'standard' | 'answer' | 'document' | 'report'>('all');
 
+  useEffect(() => {
+    async function fetchBookmarks() {
+      try {
+        const data = await bookmarksService.getBookmarks();
+        if (data && data.length > 0) {
+          const mapped: SavedItem[] = data.map((b) => ({
+            id: b.id,
+            type: (b.itemType as any) || 'standard',
+            title: b.title,
+            subtitle: b.description || b.referenceNumber || 'Bureau of Indian Standards Item',
+            savedOn: b.createdAt ? `Saved on ${new Date(b.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}` : 'Saved recently',
+            link: b.link || '/standards/std-1'
+          }));
+          setBookmarks(mapped);
+        }
+      } catch {
+        // Fallback to initial
+      }
+    }
+    fetchBookmarks();
+  }, []);
+
   const filteredBookmarks = useMemo(() => {
     if (activeTab === 'all') return bookmarks;
     return bookmarks.filter((b) => b.type === activeTab);
   }, [bookmarks, activeTab]);
 
-  const handleRemove = (id: string) => {
+  const handleRemove = async (id: string) => {
+    try {
+      await bookmarksService.removeBookmark(id);
+    } catch {
+      // ignore
+    }
     setBookmarks(bookmarks.filter((b) => b.id !== id));
   };
 
@@ -115,8 +143,8 @@ export default function BookmarksPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === tab.id
-                  ? 'bg-[#063b73] text-white shadow-xs'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                ? 'bg-[#063b73] text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
             >
               {tab.label}

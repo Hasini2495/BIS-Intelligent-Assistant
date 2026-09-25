@@ -10,7 +10,15 @@ from app.core.exceptions import setup_exception_handlers
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
+    import app.models  # Register all models with Base.metadata
     await init_db()
+    
+    # Auto-seed database if empty
+    from app.services.seed_service import seed_database_if_empty
+    from app.services.document_service import ensure_seeded_sample_files
+    await seed_database_if_empty()
+    ensure_seeded_sample_files()
+    
     yield
     # Shutdown
 

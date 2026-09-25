@@ -3,10 +3,14 @@ import {
   CheckCircle2,
   QrCode,
   Sparkles,
+  AlertCircle,
+  ShieldCheck,
+  Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { BisLogo } from '@/components/ui/BisLogo';
+import { hallmarkingService, HallmarkingVerificationResult } from '@/services/hallmarkingService';
 
 const GOLD_PURITY_GRADES = [
   { karat: '24K', fineness: '995', label: '24 Karat (99.5% Pure)', use: 'Investment gold bars and coins' },
@@ -19,22 +23,34 @@ const GOLD_PURITY_GRADES = [
 
 export default function HallmarkingPage() {
   const [huidQuery, setHuidQuery] = useState('');
-  const [huidResult, setHuidResult] = useState<null | { valid: boolean; article: string; purity: string; centre: string }>(null);
+  const [verificationResult, setVerificationResult] = useState<HallmarkingVerificationResult | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [formatError, setFormatError] = useState<string | null>(null);
 
-  const handleVerifyHuid = (e: React.FormEvent) => {
+  const handleVerifyHuid = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!huidQuery.trim()) return;
+    setFormatError(null);
+    setVerificationResult(null);
 
-    if (huidQuery.length >= 6) {
-      setHuidResult({
-        valid: true,
-        article: 'Gold Ring / Bangle',
-        purity: '22K (916 Fineness)',
-        centre: 'Assaying & Hallmarking Centre #AHC-DEL-04',
-      });
-    } else {
-      setHuidResult(null);
-      alert('Please enter a valid 6-character alphanumeric HUID number.');
+    const query = huidQuery.trim().toUpperCase();
+    if (!query) {
+      setFormatError('Please enter a 6-character HUID number.');
+      return;
+    }
+
+    if (query.length !== 6 || !/^[A-Z0-9]{6}$/.test(query)) {
+      setFormatError('Invalid HUID format. HUID must be exactly 6 alphanumeric characters (e.g., BJ9281, AB1234).');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const res = await hallmarkingService.verifyHuid(query);
+      setVerificationResult(res);
+    } catch {
+      setFormatError('Unable to connect to the Hallmarking verification service. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -94,7 +110,7 @@ export default function HallmarkingPage() {
           {/* Mark 3 */}
           <div className="rounded-xl border border-amber-200/80 bg-white p-4 shadow-2xs text-center flex flex-col items-center">
             <div className="h-14 flex items-center justify-center font-mono font-bold text-lg text-slate-800 bg-slate-100 rounded-lg px-3 tracking-widest border border-dashed border-slate-300">
-              AB1234
+              BJ9281
             </div>
             <span className="text-xs font-bold text-slate-900 mt-2">3. 6-Digit HUID</span>
             <p className="text-[11px] text-slate-500 mt-0.5">
@@ -104,7 +120,7 @@ export default function HallmarkingPage() {
         </div>
       </div>
 
-      {/* Interactive HUID Verification Simulator */}
+      {/* Real HUID Verification */}
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
         <div className="flex items-center gap-3 mb-2">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
@@ -115,10 +131,17 @@ export default function HallmarkingPage() {
               Verify Hallmark (HUID) Online
             </h3>
             <p className="text-xs text-slate-500">
-              Enter the 6-character laser-engraved HUID number to verify authenticity in the central registry.
+              Enter the 6-character laser-engraved HUID number to verify authenticity in the central registry (e.g. try sample <strong>BJ9281</strong> or <strong>KL4829</strong>).
             </p>
           </div>
         </div>
+
+        {formatError && (
+          <div className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+            <AlertCircle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
+            <div>{formatError}</div>
+          </div>
+        )}
 
         <form onSubmit={handleVerifyHuid} className="mt-4 flex flex-col sm:flex-row gap-3">
           <input
@@ -126,26 +149,61 @@ export default function HallmarkingPage() {
             maxLength={6}
             value={huidQuery}
             onChange={(e) => setHuidQuery(e.target.value.toUpperCase())}
-            placeholder="e.g. AB78X9"
+            placeholder="e.g. BJ9281"
             className="h-11 w-full sm:w-80 rounded-xl border border-slate-200 bg-slate-50/50 px-4 text-sm font-mono uppercase tracking-widest text-slate-900 outline-none focus:border-[#063b73] focus:bg-white"
           />
           <button
             type="submit"
-            className="h-11 rounded-xl bg-[#063b73] px-6 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-[#0B4A8F] transition-all"
+            disabled={isLoading}
+            className="h-11 inline-flex items-center justify-center gap-2 rounded-xl bg-[#063b73] px-6 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-[#0B4A8F] transition-all disabled:opacity-50"
           >
-            Verify HUID
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+            <span>{isLoading ? 'Verifying Registry...' : 'Verify HUID'}</span>
           </button>
         </form>
 
-        {huidResult && (
-          <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-xs space-y-1.5">
-            <div className="flex items-center gap-2 font-bold text-emerald-800">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              <span>Authentic Hallmarked Article Verified</span>
-            </div>
-            <p className="text-slate-700">Article: <strong>{huidResult.article}</strong></p>
-            <p className="text-slate-700">Certified Purity: <strong>{huidResult.purity}</strong></p>
-            <p className="text-slate-500">Certified by: {huidResult.centre}</p>
+        {verificationResult && (
+          <div className="mt-5 space-y-3">
+            {verificationResult.isOfficiallyVerified ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-5 text-xs space-y-3">
+                <div className="flex items-center gap-2 font-bold text-emerald-800 text-sm">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  <span>Authentic BIS Hallmarked Article Verified</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-slate-700">
+                  <div className="bg-white/80 rounded-lg p-2.5 border border-emerald-100">
+                    <span className="text-[11px] text-slate-500 block">Article Type</span>
+                    <strong className="text-slate-900">{verificationResult.articleType}</strong>
+                  </div>
+                  <div className="bg-white/80 rounded-lg p-2.5 border border-emerald-100">
+                    <span className="text-[11px] text-slate-500 block">Certified Purity &amp; Fineness</span>
+                    <strong className="text-amber-800">{verificationResult.purity}</strong>
+                  </div>
+                  <div className="bg-white/80 rounded-lg p-2.5 border border-emerald-100">
+                    <span className="text-[11px] text-slate-500 block">Assaying &amp; Hallmarking Centre</span>
+                    <span className="text-slate-800">{verificationResult.ahcCenter}</span>
+                  </div>
+                  <div className="bg-white/80 rounded-lg p-2.5 border border-emerald-100">
+                    <span className="text-[11px] text-slate-500 block">Certified Jeweller</span>
+                    <span className="text-slate-800">{verificationResult.jewellerName}</span>
+                  </div>
+                </div>
+                <div className="text-[11px] text-slate-500 pt-1">
+                  Hallmarked On: {verificationResult.hallmarkingDate} • HUID: {verificationResult.huid}
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-4 text-xs space-y-2 text-slate-700">
+                <div className="flex items-center gap-2 font-bold text-blue-900">
+                  <ShieldCheck className="h-4 w-4 text-blue-600" />
+                  <span>Valid HUID Format Recognized</span>
+                </div>
+                <p>{verificationResult.message}</p>
+                <p className="text-[11px] text-slate-500">
+                  HUID "{verificationResult.huid}" is syntactically valid per BIS IS 1417:2016. Direct verification records from offline AHCs are synced periodically.
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

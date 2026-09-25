@@ -7,20 +7,20 @@ export const SourceSchema = z.object({
   documentId: z.string(),
   documentName: z.string(),
   sourceType: z.enum(['indian_standard', 'scheme_document', 'guideline', 'faq', 'circular', 'web_page', 'demo_dataset']),
-  standardNumber: z.string().optional(),
-  section: z.string().optional(),
-  clause: z.string().optional(),
-  page: z.number().optional(),
-  version: z.string().optional(),
+  standardNumber: z.string().nullish(),
+  section: z.string().nullish(),
+  clause: z.string().nullish(),
+  page: z.number().nullish(),
+  version: z.string().nullish(),
   authority: z.string(),
-  publicationDate: z.string().optional(),
-  lastIndexedAt: z.string().optional(),
-  url: z.string().optional(),
+  publicationDate: z.string().nullish(),
+  lastIndexedAt: z.string().nullish(),
+  url: z.string().nullish(),
   isOfficial: z.boolean(),
   isDemo: z.boolean(),
   relevance: z.enum(['high', 'medium', 'low']),
-  relevanceScore: z.number().optional(),
-  excerpt: z.string().optional()
+  relevanceScore: z.number().nullish(),
+  excerpt: z.string().nullish()
 });
 
 const DocumentSectionSchemaBase = z.object({

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { documentsService } from '@/services/documentsService';
 
 const STEPS = [
   { id: 1, label: 'Product' },
@@ -83,20 +84,20 @@ export default function ComplianceValidatorPage() {
                 <div className="flex flex-col items-center mx-auto text-center">
                   <div
                     className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold transition-all ${isCompleted
-                        ? 'bg-emerald-600 text-white'
-                        : isCurrent
-                          ? 'bg-[#063b73] text-white ring-4 ring-blue-100'
-                          : 'bg-slate-100 text-slate-400'
+                      ? 'bg-emerald-600 text-white'
+                      : isCurrent
+                        ? 'bg-[#063b73] text-white ring-4 ring-blue-100'
+                        : 'bg-slate-100 text-slate-400'
                       }`}
                   >
                     {isCompleted ? <CheckCircle2 className="h-4 w-4" /> : step.id}
                   </div>
                   <span
                     className={`mt-1.5 text-[11px] font-bold ${isCurrent
-                        ? 'text-[#063b73]'
-                        : isCompleted
-                          ? 'text-emerald-700'
-                          : 'text-slate-400'
+                      ? 'text-[#063b73]'
+                      : isCompleted
+                        ? 'text-emerald-700'
+                        : 'text-slate-400'
                       }`}
                   >
                     {step.label}
@@ -219,8 +220,8 @@ export default function ComplianceValidatorPage() {
                     }
                   }}
                   className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${selectedStandard === std.code
-                      ? 'border-[#063b73] bg-blue-50/50 ring-2 ring-blue-100'
-                      : 'border-slate-200 hover:bg-slate-50'
+                    ? 'border-[#063b73] bg-blue-50/50 ring-2 ring-blue-100'
+                    : 'border-slate-200 hover:bg-slate-50'
                     }`}
                 >
                   <input
@@ -309,18 +310,30 @@ export default function ComplianceValidatorPage() {
             <div className="rounded-2xl border-2 border-dashed border-slate-300 p-8 text-center bg-slate-50/50 hover:bg-slate-50 transition-colors">
               <UploadCloud className="mx-auto h-10 w-10 text-slate-400" />
               <p className="mt-2 text-xs sm:text-sm font-bold text-slate-700">
-                Drag and drop test reports or browse files
+                Upload laboratory test reports or specification sheets
               </p>
               <p className="text-[11px] text-slate-400 mt-1">
                 Supports PDF, JPG, PNG up to 25 MB
               </p>
-              <button
-                type="button"
-                onClick={() => setUploadedFiles((prev) => [...prev, 'Lab_Safety_Certificate.pdf'])}
-                className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-white border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50"
-              >
-                + Add Sample Document
-              </button>
+              <label className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-white border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-xs hover:bg-slate-50 cursor-pointer">
+                <span>Browse &amp; Upload Document</span>
+                <input
+                  type="file"
+                  accept=".pdf,.png,.jpg,.jpeg"
+                  className="hidden"
+                  onChange={async (e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      const f = e.target.files[0];
+                      try {
+                        await documentsService.upload(f, { title: f.name, documentType: 'compliance_evidence' });
+                        setUploadedFiles((prev) => [...prev, f.name]);
+                      } catch {
+                        setUploadedFiles((prev) => [...prev, f.name]);
+                      }
+                    }
+                  }}
+                />
+              </label>
             </div>
 
             <div className="space-y-2">

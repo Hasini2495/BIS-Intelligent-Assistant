@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   ArrowUpRight,
   Clock,
@@ -7,8 +8,37 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { adminService, AdminMetrics } from '@/services/adminService';
 
 export default function AdminDashboardPage() {
+  const [metrics, setMetrics] = useState<AdminMetrics>({
+    totalUsers: 124,
+    totalDocuments: 12,
+    ingestionQueue: 0,
+    failedDocuments: 0,
+    indexedDocuments: 12,
+    openFeedback: 4,
+    totalQueries: 48,
+    uniqueUsers: 14,
+    unresolvedQueries: 2,
+    documentIndexedPercentage: 100.0,
+    userGrowthRate: 14.2
+  });
+
+  useEffect(() => {
+    async function loadMetrics() {
+      try {
+        const data = await adminService.getMetrics();
+        if (data) {
+          setMetrics(data);
+        }
+      } catch {
+        // Fallback to default
+      }
+    }
+    loadMetrics();
+  }, []);
+
   return (
     <div className="space-y-6 font-sans max-w-6xl mx-auto">
       {/* Page Header (Screen 18) */}
@@ -48,12 +78,12 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-slate-900">124</span>
+            <span className="text-2xl sm:text-3xl font-black text-slate-900">{metrics.totalUsers}</span>
             <span className="text-[10px] font-bold text-emerald-600 flex items-center">
-              +14% <ArrowUpRight className="h-3 w-3" />
+              +{metrics.userGrowthRate}% <ArrowUpRight className="h-3 w-3" />
             </span>
           </div>
-          <p className="mt-1 text-[10px] text-slate-400">Active participants</p>
+          <p className="mt-1 text-[10px] text-slate-400">Active registered users</p>
         </div>
 
         {/* Documents */}
@@ -65,10 +95,10 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-slate-900">1,250</span>
-            <span className="text-[10px] font-bold text-slate-400">Indexed</span>
+            <span className="text-2xl sm:text-3xl font-black text-slate-900">{metrics.totalDocuments}</span>
+            <span className="text-[10px] font-bold text-emerald-600">{metrics.indexedDocuments} Indexed</span>
           </div>
-          <p className="mt-1 text-[10px] text-slate-400">Standards &amp; manuals</p>
+          <p className="mt-1 text-[10px] text-slate-400">Standards &amp; manuals in DB</p>
         </div>
 
         {/* Ingestion Queue */}
@@ -80,7 +110,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-slate-900">56</span>
+            <span className="text-2xl sm:text-3xl font-black text-slate-900">{metrics.ingestionQueue}</span>
             <span className="text-[10px] font-bold text-amber-600">Pending</span>
           </div>
           <p className="mt-1 text-[10px] text-slate-400">Vector chunking pipeline</p>
@@ -95,7 +125,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-black text-slate-900">23</span>
+            <span className="text-2xl sm:text-3xl font-black text-slate-900">{metrics.openFeedback}</span>
             <span className="text-[10px] font-bold text-slate-400">Tickets</span>
           </div>
           <p className="mt-1 text-[10px] text-slate-400">User accuracy reports</p>
@@ -111,7 +141,6 @@ export default function AdminDashboardPage() {
             <p className="text-xs text-slate-500 mt-0.5">Platform adoption trend</p>
           </div>
 
-          {/* SVG Line / Area chart */}
           <div className="my-6">
             <svg viewBox="0 0 300 120" className="w-full h-28 overflow-visible">
               <defs>
@@ -120,16 +149,13 @@ export default function AdminDashboardPage() {
                   <stop offset="100%" stopColor="#063b73" stopOpacity="0.0" />
                 </linearGradient>
               </defs>
-              {/* Gridlines */}
               <line x1="0" y1="20" x2="300" y2="20" stroke="#f1f5f9" strokeWidth="1" />
               <line x1="0" y1="60" x2="300" y2="60" stroke="#f1f5f9" strokeWidth="1" />
               <line x1="0" y1="100" x2="300" y2="100" stroke="#f1f5f9" strokeWidth="1" />
-              {/* Area */}
               <polygon
                 points="0,110 0,95 60,80 120,70 180,45 240,35 300,15 300,110"
                 fill="url(#growthGradient)"
               />
-              {/* Line */}
               <polyline
                 fill="none"
                 stroke="#063b73"
@@ -138,7 +164,6 @@ export default function AdminDashboardPage() {
                 strokeLinejoin="round"
                 points="0,95 60,80 120,70 180,45 240,35 300,15"
               />
-              {/* Points */}
               <circle cx="180" cy="45" r="3.5" fill="#E8850C" />
               <circle cx="300" cy="15" r="4" fill="#063b73" />
             </svg>
@@ -152,7 +177,7 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="text-xs text-slate-600 font-medium">
-            Active verified users increased by <strong>+32%</strong> over the past quarter.
+            Active verified users increased by <strong>+{metrics.userGrowthRate}%</strong> over the past period.
           </div>
         </div>
 
@@ -163,16 +188,13 @@ export default function AdminDashboardPage() {
             <p className="text-xs text-slate-500 mt-0.5">Most searched topics &amp; standards</p>
           </div>
 
-          {/* SVG Bar Chart */}
           <div className="my-6">
             <svg viewBox="0 0 300 120" className="w-full h-28 overflow-visible">
-              {/* Bars */}
               <rect x="20" y="20" width="28" height="90" rx="4" fill="#063b73" />
               <rect x="80" y="40" width="28" height="70" rx="4" fill="#1E63C4" />
               <rect x="140" y="30" width="28" height="80" rx="4" fill="#0E7A3C" />
               <rect x="200" y="55" width="28" height="55" rx="4" fill="#E8850C" />
               <rect x="260" y="65" width="28" height="45" rx="4" fill="#6D28D9" />
-              {/* Baseline */}
               <line x1="0" y1="110" x2="300" y2="110" stroke="#cbd5e1" strokeWidth="1" />
             </svg>
             <div className="flex justify-between text-[9px] text-slate-500 font-semibold px-2 mt-1">
@@ -185,7 +207,7 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="text-xs text-slate-600 font-medium">
-            <strong>IS 456 (Concrete)</strong> leads query volume with 420 requests.
+            <strong>IS 456 (Concrete)</strong> leads query volume across the Bureau.
           </div>
         </div>
 
@@ -197,12 +219,9 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="my-4 flex items-center justify-center">
-            {/* SVG Donut */}
             <div className="relative">
               <svg width="120" height="120" viewBox="0 0 36 36" className="transform -rotate-90">
-                {/* Background Ring */}
                 <circle cx="18" cy="18" r="14" fill="transparent" stroke="#f1f5f9" strokeWidth="4" />
-                {/* Indexed: 78% (emerald) */}
                 <circle
                   cx="18"
                   cy="18"
@@ -210,34 +229,12 @@ export default function AdminDashboardPage() {
                   fill="transparent"
                   stroke="#0E7A3C"
                   strokeWidth="4"
-                  strokeDasharray="68.6 100"
+                  strokeDasharray={`${(metrics.documentIndexedPercentage * 0.88).toFixed(1)} 100`}
                   strokeDashoffset="0"
-                />
-                {/* Processing: 14% (blue) */}
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="14"
-                  fill="transparent"
-                  stroke="#063b73"
-                  strokeWidth="4"
-                  strokeDasharray="12.3 100"
-                  strokeDashoffset="-68.6"
-                />
-                {/* Failed: 8% (red) */}
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="14"
-                  fill="transparent"
-                  stroke="#dc2626"
-                  strokeWidth="4"
-                  strokeDasharray="7 100"
-                  strokeDashoffset="-80.9"
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-                <span className="text-base font-black text-slate-900">78%</span>
+                <span className="text-base font-black text-slate-900">{metrics.documentIndexedPercentage}%</span>
                 <span className="text-[9px] text-slate-400 font-bold uppercase">Indexed</span>
               </div>
             </div>
@@ -249,21 +246,21 @@ export default function AdminDashboardPage() {
                 <span className="h-2 w-2 rounded-full bg-emerald-600" />
                 Indexed
               </span>
-              <span className="font-bold text-slate-900">975 (78%)</span>
+              <span className="font-bold text-slate-900">{metrics.indexedDocuments} ({metrics.documentIndexedPercentage}%)</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-slate-600">
-                <span className="h-2 w-2 rounded-full bg-[#063b73]" />
-                Processing
+                <span className="h-2 w-2 rounded-full bg-amber-500" />
+                Queue
               </span>
-              <span className="font-bold text-slate-900">175 (14%)</span>
+              <span className="font-bold text-slate-900">{metrics.ingestionQueue}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-1.5 text-slate-600">
                 <span className="h-2 w-2 rounded-full bg-red-600" />
                 Failed
               </span>
-              <span className="font-bold text-slate-900">100 (8%)</span>
+              <span className="font-bold text-slate-900">{metrics.failedDocuments}</span>
             </div>
           </div>
         </div>

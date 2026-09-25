@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Bell,
   Calendar,
@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { notificationsService } from '@/services/notificationsService';
 
 interface NotificationItem {
   id: string;
@@ -68,16 +69,49 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const [activeTab, setActiveTab] = useState<'all' | 'system' | 'standards' | 'validation' | 'updates'>('all');
 
+  useEffect(() => {
+    async function loadNotifications() {
+      try {
+        const data = await notificationsService.getNotifications();
+        if (data && data.length > 0) {
+          const mapped: NotificationItem[] = data.map((n) => ({
+            id: n.id,
+            category: (n.category as any) || 'system',
+            title: n.title,
+            description: n.description,
+            timestamp: n.createdAt ? new Date(n.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recently',
+            read: n.read,
+            link: n.link
+          }));
+          setNotifications(mapped);
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    loadNotifications();
+  }, []);
+
   const filteredNotifications = useMemo(() => {
     if (activeTab === 'all') return notifications;
     return notifications.filter((n) => n.category === activeTab);
   }, [notifications, activeTab]);
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    try {
+      await notificationsService.markAllAsRead();
+    } catch {
+      // ignore
+    }
     setNotifications(notifications.map((n) => ({ ...n, read: true })));
   };
 
-  const markAsRead = (id: string) => {
+  const markAsRead = async (id: string) => {
+    try {
+      await notificationsService.markAsRead(id);
+    } catch {
+      // ignore
+    }
     setNotifications(
       notifications.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
@@ -148,8 +182,8 @@ export default function NotificationsPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === tab.id
-                  ? 'bg-[#063b73] text-white shadow-xs'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                ? 'bg-[#063b73] text-white shadow-xs'
+                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
             >
               {tab.label}
@@ -173,8 +207,8 @@ export default function NotificationsPage() {
               }
             }}
             className={`group rounded-2xl border bg-white p-5 shadow-xs transition-all flex items-start justify-between gap-4 cursor-pointer ${notif.read
-                ? 'border-slate-200 opacity-80 hover:opacity-100'
-                : 'border-blue-200 bg-blue-50/20 hover:border-[#063b73]/40'
+              ? 'border-slate-200 opacity-80 hover:opacity-100'
+              : 'border-blue-200 bg-blue-50/20 hover:border-[#063b73]/40'
               }`}
           >
             <div className="flex items-start gap-3.5 min-w-0">

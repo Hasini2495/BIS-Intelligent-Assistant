@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   CheckCircle2,
   Clock,
@@ -10,12 +10,16 @@ import {
   Trash2,
   UploadCloud,
   XCircle,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/Table';
 import { Modal } from '@/components/ui/Modal';
+import { documentsService } from '@/services/documentsService';
 
-interface DocumentItem {
+interface DocumentDisplayItem {
   id: string;
   name: string;
   type: string;
@@ -24,7 +28,7 @@ interface DocumentItem {
   size: string;
 }
 
-const INITIAL_DOCUMENTS: DocumentItem[] = [
+const FALLBACK_DOCUMENTS: DocumentDisplayItem[] = [
   {
     id: 'doc-1',
     name: 'LED_Bulb_TestReport.pdf',
@@ -68,12 +72,51 @@ const INITIAL_DOCUMENTS: DocumentItem[] = [
 ];
 
 export default function DocumentCenterPage() {
-  const [documents, setDocuments] = useState<DocumentItem[]>(INITIAL_DOCUMENTS);
+  const [documents, setDocuments] = useState<DocumentDisplayItem[]>(FALLBACK_DOCUMENTS);
   const [activeTab, setActiveTab] = useState<'all' | 'processing' | 'completed' | 'failed'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [newDocName, setNewDocName] = useState('');
   const [newDocType, setNewDocType] = useState('Test Report');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const navigate = useNavigate();
+
+  const loadDocuments = async () => {
+    try {
+      const items = await documentsService.list();
+      if (items && items.length > 0) {
+        const mapped: DocumentDisplayItem[] = items.map((it) => {
+          const sizeKb = (it.fileSize || 0) / 1024;
+          const sizeStr = sizeKb >= 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb.toFixed(0)} KB`;
+          let st: 'completed' | 'processing' | 'failed' = 'completed';
+          if (it.status === 'processing' || it.status === 'uploaded') st = 'processing';
+          if (it.status === 'failed') st = 'failed';
+
+          return {
+            id: it.id,
+            name: it.title || it.originalFilename || 'Document.pdf',
+            type: it.documentType || 'Report',
+            status: st,
+            uploadedOn: it.createdAt ? new Date(it.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recently',
+            size: sizeStr,
+          };
+        });
+        setDocuments(mapped);
+      }
+    } catch {
+      // Keep initial seeded fallback documents
+    }
+  };
+
+  useEffect(() => {
+    loadDocuments();
+  }, []);
 
   const filteredDocs = useMemo(() => {
     return documents.filter((doc) => {
@@ -86,26 +129,86 @@ export default function DocumentCenterPage() {
     });
   }, [documents, activeTab, searchQuery]);
 
-  const handleUploadSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newDocName.trim()) return;
-
-    const newDoc: DocumentItem = {
-      id: `doc-${Date.now()}`,
-      name: newDocName.endsWith('.pdf') ? newDocName : `${newDocName}.pdf`,
-      type: newDocType,
-      status: 'completed',
-      uploadedOn: 'Today',
-      size: '1.5 MB',
-    };
-
-    setDocuments([newDoc, ...documents]);
-    setNewDocName('');
-    setUploadModalOpen(false);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const f = e.target.files[0];
+      setSelectedFile(f);
+      if (!newDocName.trim()) {
+        setNewDocName(f.name);
+      }
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleUploadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile) {
+      setUploadError('Please select a PDF, PNG, or JPG file to upload.');
+      return;
+    }
+    setUploadError(null);
+    setIsUploading(true);
+
+    try {
+      const docTypeMapping: Record<string, string> = {
+        'Test Report': 'compliance_evidence',
+        'User Manual': 'user_manual',
+        'Certificate': 'certificate',
+        'Specification': 'standard',
+      };
+
+      const result = await documentsService.upload(selectedFile, {
+        title: newDocName.trim() || selectedFile.name,
+        documentType: docTypeMapping[newDocType] || 'compliance_evidence'
+      });
+
+      const sizeKb = (result.fileSize || selectedFile.size) / 1024;
+      const sizeStr = sizeKb >= 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb.toFixed(0)} KB`;
+
+      const newDocItem: DocumentDisplayItem = {
+        id: result.id,
+        name: result.title,
+        type: newDocType,
+        status: result.status === 'failed' ? 'failed' : 'completed',
+        uploadedOn: 'Today',
+        size: sizeStr,
+      };
+
+      setDocuments([newDocItem, ...documents]);
+      setUploadModalOpen(false);
+      setSelectedFile(null);
+      setNewDocName('');
+      setActionNotice(`Document "${result.title}" uploaded and indexed successfully.`);
+      setTimeout(() => setActionNotice(null), 4000);
+    } catch (err: any) {
+      setUploadError(err?.detail || err?.message || 'File upload failed. Please ensure file is valid PDF/Image under 25MB.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDownload = async (doc: DocumentDisplayItem) => {
+    setDownloadingId(doc.id);
+    try {
+      await documentsService.download(doc.id, doc.name);
+      setActionNotice(`Downloaded ${doc.name} successfully.`);
+      setTimeout(() => setActionNotice(null), 3000);
+    } catch (err: any) {
+      // Direct stream fallback
+      window.open(`/api/documents/${doc.id}/download`, '_blank');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      await documentsService.delete(id);
+    } catch {
+      // ignore
+    }
     setDocuments(documents.filter((d) => d.id !== id));
+    setActionNotice('Document removed.');
+    setTimeout(() => setActionNotice(null), 2500);
   };
 
   return (
@@ -121,8 +224,13 @@ export default function DocumentCenterPage() {
         actions={
           <button
             type="button"
-            onClick={() => setUploadModalOpen(true)}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#063b73] px-4 py-2 text-xs sm:text-sm font-bold text-white shadow-xs hover:bg-[#0B4A8F] transition-all"
+            onClick={() => {
+              setUploadError(null);
+              setSelectedFile(null);
+              setNewDocName('');
+              setUploadModalOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#063b73] px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-[#0B4A8F] active:bg-[#042449] transition-all"
           >
             <Plus className="h-4 w-4" />
             <span>Upload Document</span>
@@ -130,97 +238,81 @@ export default function DocumentCenterPage() {
         }
       />
 
-      {/* Filter Tabs & Search Bar (Reference Screen 10) */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          {/* Status Tabs */}
-          <div className="flex items-center space-x-1 border-b sm:border-b-0 border-slate-200 pb-2 sm:pb-0">
-            {[
-              { id: 'all', label: 'All Documents', count: documents.length },
-              {
-                id: 'processing',
-                label: 'Processing',
-                count: documents.filter((d) => d.status === 'processing').length,
-              },
-              {
-                id: 'completed',
-                label: 'Completed',
-                count: documents.filter((d) => d.status === 'completed').length,
-              },
-              {
-                id: 'failed',
-                label: 'Failed',
-                count: documents.filter((d) => d.status === 'failed').length,
-              },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === tab.id
-                    ? 'bg-[#063b73] text-white shadow-xs'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                  }`}
-              >
-                <span>{tab.label}</span>
-                <span
-                  className={`rounded-full px-1.5 py-0.2 text-[10px] ${activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
-                    }`}
-                >
-                  {tab.count}
-                </span>
-              </button>
-            ))}
-          </div>
+      {actionNotice && (
+        <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800 font-semibold">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+          <span>{actionNotice}</span>
+        </div>
+      )}
 
-          {/* Search Input */}
-          <div className="relative w-full sm:w-72">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search documents..."
-              className="h-9 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-9 pr-3 text-xs text-slate-900 outline-none focus:border-[#063b73] focus:bg-white focus:ring-2 focus:ring-blue-100"
-            />
-          </div>
+      {/* Filter Tabs & Search Bar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+        {/* Status Tabs */}
+        <div className="flex w-full sm:w-auto p-1 bg-slate-100 rounded-xl border border-slate-200/80">
+          {(['all', 'completed', 'processing', 'failed'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 sm:flex-none px-3.5 py-1.5 text-xs font-bold rounded-lg capitalize transition-colors ${activeTab === tab
+                  ? 'bg-white text-[#063b73] shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+                }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Search */}
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search documents..."
+            className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-xs text-slate-800 placeholder:text-slate-400 focus:border-[#063b73] focus:outline-none focus:ring-1 focus:ring-[#063b73]"
+          />
         </div>
       </div>
 
-      {/* Documents Table (Reference Screen 10) */}
+      {/* Documents Table */}
       <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-2/5">Document Name</TableHead>
-              <TableHead className="w-1/6">Type</TableHead>
-              <TableHead className="w-1/6">Status</TableHead>
-              <TableHead className="w-1/6">Uploaded On</TableHead>
-              <TableHead className="w-1/12 text-right">Actions</TableHead>
+              <TableHead>Document Name</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Size</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Uploaded On</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredDocs.map((doc) => (
               <TableRow key={doc.id}>
-                {/* Name */}
+                {/* Document Name */}
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-[#063b73]">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-[#063b73]">
                       <FileText className="h-4 w-4" />
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-xs sm:text-sm text-slate-900 truncate">
-                        {doc.name}
-                      </p>
-                      <p className="text-[11px] text-slate-400 font-mono">
-                        {doc.size}
-                      </p>
+                    <div>
+                      <p className="font-bold text-xs sm:text-sm text-slate-900">{doc.name}</p>
+                      <p className="text-[11px] text-slate-400 font-mono">ID: {doc.id}</p>
                     </div>
                   </div>
                 </TableCell>
 
                 {/* Type */}
-                <TableCell className="text-xs font-semibold text-slate-700">
+                <TableCell className="text-xs text-slate-600 font-medium">
                   {doc.type}
+                </TableCell>
+
+                {/* Size */}
+                <TableCell className="text-xs text-slate-500 font-medium">
+                  {doc.size}
                 </TableCell>
 
                 {/* Status Badge */}
@@ -228,12 +320,12 @@ export default function DocumentCenterPage() {
                   {doc.status === 'completed' && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-700 border border-emerald-200">
                       <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                      Completed
+                      Indexed
                     </span>
                   )}
                   {doc.status === 'processing' && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-bold text-[#063b73] border border-blue-200">
-                      <Clock className="h-3 w-3 text-[#063b73] animate-spin" />
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-700 border border-amber-200">
+                      <Clock className="h-3 w-3 text-amber-600 animate-spin" />
                       Processing
                     </span>
                   )}
@@ -255,7 +347,7 @@ export default function DocumentCenterPage() {
                   <div className="flex items-center justify-end gap-1">
                     <button
                       type="button"
-                      onClick={() => alert(`Previewing document: ${doc.name}`)}
+                      onClick={() => navigate(`/documents/${doc.id}`)}
                       className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                       title="View document"
                     >
@@ -263,11 +355,16 @@ export default function DocumentCenterPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => alert(`Downloading: ${doc.name}`)}
-                      className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                      onClick={() => handleDownload(doc)}
+                      disabled={downloadingId === doc.id}
+                      className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50"
                       title="Download document"
                     >
-                      <Download className="h-4 w-4" />
+                      {downloadingId === doc.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-[#063b73]" />
+                      ) : (
+                        <Download className="h-4 w-4" />
+                      )}
                     </button>
                     <button
                       type="button"
@@ -284,8 +381,8 @@ export default function DocumentCenterPage() {
 
             {filteredDocs.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="py-12 text-center text-slate-400 text-xs">
-                  No documents found matching current filter.
+                <TableCell colSpan={6} className="text-center py-10 text-xs text-slate-400">
+                  No documents found matching the filter criteria.
                 </TableCell>
               </TableRow>
             )}
@@ -293,70 +390,98 @@ export default function DocumentCenterPage() {
         </Table>
       </div>
 
-      {/* Upload Document Modal (Screen 10) */}
+      {/* Upload Document Modal */}
       <Modal
         isOpen={uploadModalOpen}
-        onClose={() => setUploadModalOpen(false)}
-        title="Upload Document"
-        description="Add a new test report, certificate, or product specification to your document repository."
+        onClose={() => {
+          if (!isUploading) setUploadModalOpen(false);
+        }}
+        title="Upload Verification Evidence Document"
       >
         <form onSubmit={handleUploadSubmit} className="space-y-4">
+          {uploadError && (
+            <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+              <AlertCircle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
+              <div>{uploadError}</div>
+            </div>
+          )}
+
           <div>
-            <label htmlFor="doc-upload-title" className="block text-xs font-semibold text-slate-700 mb-1">
-              Document Title / Filename <span className="text-red-500">*</span>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              Select Document File (.pdf, .png, .jpg)
             </label>
             <input
-              id="doc-upload-title"
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.png,.jpg,.jpeg"
+              required
+              onChange={handleFileChange}
+              className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-[#063b73] hover:file:bg-blue-100 cursor-pointer border border-slate-200 rounded-xl p-1"
+            />
+            {selectedFile && (
+              <p className="mt-1 text-[11px] text-slate-500">
+                Selected: {selectedFile.name} ({(selectedFile.size / 1024).toFixed(0)} KB)
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label htmlFor="doc-title-input" className="block text-xs font-semibold text-slate-700 mb-1">
+              Document Title / Label
+            </label>
+            <input
+              id="doc-title-input"
               type="text"
               required
               value={newDocName}
               onChange={(e) => setNewDocName(e.target.value)}
-              placeholder="e.g. Concrete_Compression_Report_2026.pdf"
-              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-xs sm:text-sm text-slate-900 outline-none focus:border-[#063b73] focus:bg-white"
+              placeholder="e.g. LED_Bulb_TestReport.pdf"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-xs text-slate-900 outline-none focus:border-[#063b73]"
             />
           </div>
 
           <div>
-            <label htmlFor="doc-upload-type" className="block text-xs font-semibold text-slate-700 mb-1">
-              Document Type
+            <label htmlFor="doc-type-select" className="block text-xs font-semibold text-slate-700 mb-1">
+              Document Category
             </label>
             <select
-              id="doc-upload-type"
+              id="doc-type-select"
               value={newDocType}
               onChange={(e) => setNewDocType(e.target.value)}
-              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-xs sm:text-sm text-slate-900 outline-none focus:border-[#063b73] focus:bg-white"
+              className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-xs text-slate-900 outline-none focus:border-[#063b73]"
             >
               <option value="Test Report">Test Report</option>
               <option value="User Manual">User Manual</option>
               <option value="Certificate">Certificate</option>
               <option value="Specification">Technical Specification</option>
-              <option value="Standard Reference">Standard Reference</option>
             </select>
           </div>
 
-          <div className="rounded-xl border-2 border-dashed border-slate-300 p-6 text-center bg-slate-50">
-            <UploadCloud className="mx-auto h-8 w-8 text-slate-400" />
-            <p className="mt-1 text-xs font-semibold text-slate-700">
-              Drag file here or click to browse
-            </p>
-            <p className="text-[10px] text-slate-400 mt-0.5">
-              PDF, DOCX, PNG up to 25 MB
-            </p>
-          </div>
-
-          <div className="pt-2 flex justify-end gap-2">
+          <div className="flex justify-end gap-2 pt-4">
             <button
               type="button"
+              disabled={isUploading}
               onClick={() => setUploadModalOpen(false)}
-              className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="rounded-xl bg-[#063b73] px-5 py-2 text-xs font-bold text-white hover:bg-[#0B4A8F]"
+              disabled={isUploading}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#063b73] px-4 py-2 text-xs font-bold text-white hover:bg-[#0B4A8F] disabled:opacity-50"
             >
-              Upload Document
+              {isUploading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Uploading &amp; Indexing...</span>
+                </>
+              ) : (
+                <>
+                  <UploadCloud className="h-4 w-4" />
+                  <span>Upload to BIS Storage</span>
+                </>
+              )}
             </button>
           </div>
         </form>

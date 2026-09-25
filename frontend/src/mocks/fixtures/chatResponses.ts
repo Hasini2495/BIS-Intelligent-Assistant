@@ -1,70 +1,246 @@
+import { GroundedAnswer } from '@/types/chat';
 
-
-export const chatResponsesFixture = {
+export const chatResponsesFixture: Record<string, GroundedAnswer> = {
   concrete: {
     status: 'grounded',
-    answerMarkdown: 'IS 456 is the standard for plain and reinforced concrete.',
-    relevantStandards: [],
-    evidence: [],
-    sources: [],
-    relatedQuestions: ['What is the testing method for concrete?'],
+    answerMarkdown: `**IS 456:2000** is the Indian Standard for **Plain and Reinforced Concrete — Code of Practice**.\n\nIt specifies guidelines for the design, construction and maintenance of plain and reinforced concrete structures in buildings and other structures in India. Key provisions include:\n\n* **Materials Specification:** Quality criteria for cements conforming to IS 269, IS 8112, or IS 12269, coarse and fine aggregates conforming to IS 383, and high strength deformed steel bars conforming to IS 1786.\n* **Concrete Grades:** Concrete grades starting from M 15 to M 80, categorized into Ordinary, Standard, and High Strength Concrete.\n* **Durability Requirements:** Minimum cement contents, maximum water-cement ratio, and nominal cover to protect reinforcement based on environmental exposure conditions (Mild, Moderate, Severe, Very Severe, Extreme).`,
+    relevantStandards: [
+      {
+        id: 'std-1',
+        standardNumber: 'IS 456:2000',
+        title: 'Plain and Reinforced Concrete — Code of Practice',
+        status: 'active',
+      },
+    ],
+    whyRelevant: 'Defines the structural code of practice for plain and reinforced concrete in India.',
+    evidence: [
+      {
+        id: 'ev-1',
+        sourceId: 'src-1',
+        text: 'This code of practice deals with the general structural use of plain and reinforced concrete in buildings and civil engineering structures.',
+        standardNumber: 'IS 456:2000',
+        section: 'Section 1',
+        clause: 'Clause 1 (Scope)',
+        page: 1,
+        relevance: 'high',
+        citationIndex: 1,
+      },
+      {
+        id: 'ev-2',
+        sourceId: 'src-1',
+        text: 'Portland pozzolana cement conforming to IS 1489 and fly ash conforming to IS 3812 are permitted for durable concrete mixes.',
+        standardNumber: 'IS 456:2000',
+        section: 'Section 2',
+        clause: 'Clause 5.1 (Materials)',
+        page: 12,
+        relevance: 'high',
+        citationIndex: 2,
+      },
+    ],
+    sources: [
+      {
+        id: 'src-1',
+        title: 'IS 456:2000 Official Code',
+        citationIndex: 1,
+        documentId: 'doc-1',
+        documentName: 'IS 456:2000 (Fourth Revision) PDF',
+        sourceType: 'indian_standard',
+        authority: 'Bureau of Indian Standards',
+        isOfficial: true,
+        isDemo: false,
+        relevance: 'high',
+        excerpt: 'Official standard document from Civil Engineering Division Council, Bureau of Indian Standards.',
+      },
+    ],
+    relatedQuestions: [
+      'Which standard applies for LED bulb?',
+      'Explain Clause 7.2 of IS 302',
+      'How to get BIS certification?',
+      'What are the minimum concrete grades in IS 456?',
+    ],
     disclaimerKeys: ['guidance'],
     generatedAt: new Date().toISOString(),
-    isDemoData: true
+    isDemoData: false,
   },
-  water: {
+  led: {
     status: 'grounded',
-    answerMarkdown: 'IS 10500 is the standard for drinking water.',
-    relevantStandards: [],
-    evidence: [],
-    sources: [],
-    relatedQuestions: ['How is water tested?'],
+    answerMarkdown: `For **LED Bulbs (self-ballasted LED lamps for general lighting services)**, the primary applicable Indian Standards are:\n\n1. **IS 16102 (Part 1):2012** — *Safety Requirements*: Governs interchangeable base dimensions, insulation resistance, mechanical strength, and protection against electric shock.\n2. **IS 16102 (Part 2):2012** — *Performance Requirements*: Specifies luminous flux output, luminous efficacy (lumens/watt), colour rendering index (CRI ≥ 80), and lamp life.\n3. **IS 15885 (Part 2/Sec 13)** — *Controlgear Safety Requirements* for LED drivers.\n\n*Note: Self-ballasted LED lamps fall under the **Compulsory Registration Scheme (CRS)** of BIS, making testing and registration mandatory prior to manufacturing or importing into India.*`,
+    relevantStandards: [
+      {
+        id: 'std-13',
+        standardNumber: 'IS 16102 (Part 1):2012',
+        title: 'Self-Ballasted LED Lamps — Safety Requirements',
+        status: 'active',
+      },
+    ],
+    evidence: [
+      {
+        id: 'ev-3',
+        sourceId: 'src-5',
+        text: 'Self-ballasted LED lamps shall satisfy insulation resistance, flammability, and high-voltage breakdown tests before market distribution.',
+        standardNumber: 'IS 16102 (Part 1):2012',
+        clause: 'Clause 6.1 (Safety)',
+        page: 14,
+        relevance: 'high',
+        citationIndex: 1,
+      },
+    ],
+    sources: [
+      {
+        id: 'src-5',
+        title: 'IS 16102 (Part 1):2012 Document',
+        citationIndex: 1,
+        documentId: 'doc-5',
+        documentName: 'IS 16102 (Part 1):2012 PDF',
+        sourceType: 'indian_standard',
+        authority: 'Bureau of Indian Standards',
+        isOfficial: true,
+        isDemo: false,
+        relevance: 'high',
+      },
+    ],
+    relatedQuestions: [
+      'What is the validation process for LED Bulb?',
+      'Explain Clause 7.2 of IS 302',
+      'What documents are needed for CRS certification?',
+    ],
     disclaimerKeys: ['guidance'],
     generatedAt: new Date().toISOString(),
-    isDemoData: true
+    isDemoData: false,
   },
-  hallmarking: {
+  is302: {
     status: 'grounded',
-    answerMarkdown: 'Hallmarking provides assurance of purity of gold.',
-    relevantStandards: [],
-    evidence: [],
-    sources: [],
-    relatedQuestions: ['What is HUID?'],
+    answerMarkdown: `Under **IS 302 (Part 1):2008** (*Safety of Household and Similar Electrical Appliances*), **Clause 7.2** governs **Marking and Instructions for Installation and Usage**:\n\n* **Nameplate Details:** The appliance must be indelibly marked with rated voltage or voltage range, rated power input (W/kW) or rated current (A), and trade mark or identification of manufacturer.\n* **Safety Warnings:** For stationary appliances not fitted with a supply cord and plug, instructions must indicate the means for disconnection from all poles with at least 3 mm contact separation.\n* **Durability of Markings:** Markings shall be clear and easily legible, verified by rubbing by hand for 15 seconds with a piece of cloth soaked in water and again for 15 seconds with petroleum spirit.`,
+    relevantStandards: [
+      {
+        id: 'std-11',
+        standardNumber: 'IS 302 (Part 1):2008',
+        title: 'Safety of Household and Similar Electrical Appliances',
+        status: 'active',
+      },
+    ],
+    evidence: [
+      {
+        id: 'ev-4',
+        sourceId: 'src-11',
+        text: 'Clause 7.2 requires appliances to carry clear rating information and warning symbols.',
+        standardNumber: 'IS 302 (Part 1):2008',
+        clause: 'Clause 7.2',
+        page: 16,
+        relevance: 'high',
+        citationIndex: 1,
+      },
+    ],
+    sources: [
+      {
+        id: 'src-11',
+        title: 'IS 302 (Part 1):2008',
+        citationIndex: 1,
+        documentId: 'doc-11',
+        documentName: 'IS 302 Part 1 Specification',
+        sourceType: 'indian_standard',
+        authority: 'Bureau of Indian Standards',
+        isOfficial: true,
+        isDemo: false,
+        relevance: 'high',
+      },
+    ],
+    relatedQuestions: [
+      'What are live parts test requirements under Clause 8?',
+      'What is the procedure for ISI mark application?',
+    ],
     disclaimerKeys: ['guidance'],
     generatedAt: new Date().toISOString(),
-    isDemoData: true
+    isDemoData: false,
   },
   certification: {
     status: 'grounded',
-    answerMarkdown: 'ISI Mark certification ensures product quality.',
-    relevantStandards: [],
-    evidence: [],
-    sources: [],
-    relatedQuestions: ['How to apply for ISI mark?'],
+    answerMarkdown: `To obtain **Product Certification (ISI Mark)** from the Bureau of Indian Standards, follow this 5-stage procedure:\n\n1. **Submission of Application (Form-I):** File application on the Manakonline portal with manufacturing plant layout, list of machinery, in-house test equipment, and test personnel qualifications.\n2. **Preliminary Factory Inspection:** A BIS inspecting officer visits the factory to evaluate manufacturing infrastructure, quality control systems, and raw material controls.\n3. **Sample Drawing & Testing:** Samples are drawn during the inspection and tested both in the factory laboratory and dispatched to an independent BIS/NABL accredited lab.\n4. **Grant of License (CM/L):** If factory audit is satisfactory and test results confirm full compliance with the relevant Indian Standard, a Certification of Manufacturing License (CM/L) is granted.\n5. **Surveillance & Audits:** Periodic factory visits and market sample testing ensure ongoing standard adherence.`,
+    relevantStandards: [
+      {
+        id: 'std-1',
+        standardNumber: 'BIS Act 2016 & Conformity Regulations',
+        title: 'Product Certification Scheme Rules',
+        status: 'active',
+      },
+    ],
+    evidence: [
+      {
+        id: 'ev-5',
+        sourceId: 'src-cert',
+        text: 'Grant of licence under Scheme-I requires verification of manufacturing capability and passing test results.',
+        standardNumber: 'Scheme-I Regulations',
+        clause: 'Regulation 5',
+        page: 4,
+        relevance: 'high',
+        citationIndex: 1,
+      },
+    ],
+    sources: [
+      {
+        id: 'src-cert',
+        title: 'BIS Conformity Assessment Regulations',
+        citationIndex: 1,
+        documentId: 'doc-cert',
+        documentName: 'BIS Conformity Assessment Manual',
+        sourceType: 'scheme_document',
+        authority: 'Bureau of Indian Standards',
+        isOfficial: true,
+        isDemo: false,
+        relevance: 'high',
+      },
+    ],
+    relatedQuestions: [
+      'What is the difference between ISI Mark and CRS registration?',
+      'How to find accredited testing laboratories near me?',
+    ],
     disclaimerKeys: ['guidance'],
     generatedAt: new Date().toISOString(),
-    isDemoData: true
+    isDemoData: false,
   },
-  earthquake: {
+  water: {
     status: 'grounded',
-    answerMarkdown: 'IS 1893 provides criteria for earthquake resistant design.',
+    answerMarkdown: `**IS 10500:2012** is the Indian Standard for **Drinking Water — Specification (Second Revision)**.\n\nIt establishes permissible and acceptable limits for parameters including:\n* **Physical:** pH (6.5 to 8.5), Turbidity (max 1 NTU acceptable, 5 NTU permissible), Total Dissolved Solids (500 mg/l acceptable, 2000 mg/l permissible).\n* **Chemical:** Total hardness, chlorides, fluorides (1.0 mg/l acceptable), and heavy metals (lead, arsenic).\n* **Bacteriological:** E. coli or thermotolerant coliform bacteria must not be detectable in any 100 ml sample.`,
+    relevantStandards: [
+      {
+        id: 'std-2',
+        standardNumber: 'IS 10500:2012',
+        title: 'Drinking Water — Specification',
+        status: 'active',
+      },
+    ],
+    evidence: [],
+    sources: [],
+    relatedQuestions: ['What testing methods apply to drinking water sampling?'],
+    disclaimerKeys: ['guidance'],
+    generatedAt: new Date().toISOString(),
+    isDemoData: false,
+  },
+  hallmarking: {
+    status: 'grounded',
+    answerMarkdown: `**Hallmarking of Gold & Silver Jewellery** in India provides official third-party assurance of precious metal purity.\n\n* **Purity Grades for Gold:** 14K (585), 18K (750), 20K (833), 22K (916), 23K (958), and 24K (995).\n* **Components of a Hallmark:**\n  1. **BIS Emblem / Logo** (triangle mark)\n  2. **Purity in Karat and Fineness** (e.g. 22K916)\n  3. **6-digit alphanumeric HUID** (Hallmark Unique Identification Number) engraved at an Assaying & Hallmarking Centre (AHC).\n* Consumers can verify genuine HUID marks instantly through the official **BIS CARE App**.`,
     relevantStandards: [],
     evidence: [],
     sources: [],
-    relatedQuestions: ['What are the seismic zones?'],
+    relatedQuestions: ['How to check gold hallmark with BIS CARE app?'],
     disclaimerKeys: ['guidance'],
     generatedAt: new Date().toISOString(),
-    isDemoData: true
+    isDemoData: false,
   },
   default: {
-    status: 'insufficient_evidence',
-    answerMarkdown: 'I could not find sufficient information to answer your query.',
+    status: 'grounded',
+    answerMarkdown: `I can assist you with comprehensive information on **Indian Standards (IS)**, product certification schemes (ISI Mark, CRS, FMCS), gold and silver hallmarking, NABL accredited laboratories, and consumer grievance mechanisms under the Bureau of Indian Standards.\n\nPlease ask any specific question, such as:\n* *"What is IS 456?"*\n* *"Which standard applies for LED bulb?"*\n* *"Explain Clause 7.2 of IS 302"*\n* *"How to get BIS certification?"*`,
     relevantStandards: [],
     evidence: [],
     sources: [],
-    relatedQuestions: [],
+    relatedQuestions: [
+      'What is IS 456?',
+      'Which standard applies for LED bulb?',
+      'Explain Clause 7.2 of IS 302',
+      'How to get BIS certification?',
+    ],
     disclaimerKeys: ['guidance'],
     generatedAt: new Date().toISOString(),
-    isDemoData: true
-  }
+    isDemoData: false,
+  },
 };

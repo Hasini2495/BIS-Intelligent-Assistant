@@ -87,7 +87,7 @@ export function isExternalUrl(url: string): boolean {
   return /^https?:\/\//.test(url);
 }
 
-export function buildQueryString(params: Record<string, any>): string {
+export function buildQueryString(params: Record<string, unknown>): string {
   const searchParams = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {

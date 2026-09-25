@@ -33,11 +33,12 @@ export class ApiContractError extends Error {
   }
 }
 
-export function mapApiError(error: any): Error {
+export function mapApiError(error: unknown): Error {
   if (error instanceof ApiError || error instanceof NetworkError || error instanceof TimeoutError || error instanceof ApiContractError) {
     return error;
   }
-  if (error.name === 'AbortError') {
+  const err = error as { name?: string; message?: string } | null | undefined;
+  if (err?.name === 'AbortError') {
     return new TimeoutError();
   }
   if (error instanceof TypeError && error.message === 'Failed to fetch') {

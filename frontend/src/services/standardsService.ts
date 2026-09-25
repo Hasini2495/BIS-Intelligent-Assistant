@@ -5,7 +5,7 @@ import { Paginated } from '@/types/common';
 import { buildQueryString } from '@/lib/utils';
 
 export const standardsService = {
-  async list(params?: Record<string, any>): Promise<Paginated<StandardReference>> {
+  async list(params?: Record<string, unknown>): Promise<Paginated<StandardReference>> {
     const qs = params ? `?${buildQueryString(params)}` : '';
     const response = await apiClient.get(`/standards${qs}`);
     return StandardsListResponseSchema.parse(response) as unknown as Paginated<StandardReference>;

@@ -9,7 +9,7 @@ import { createPaginatedSchema } from '@/api/schemas/common.schema';
 const LabsListSchema = createPaginatedSchema(LaboratorySchema);
 
 export const labsService = {
-  async list(params?: Record<string, any>): Promise<Paginated<Laboratory>> {
+  async list(params?: Record<string, unknown>): Promise<Paginated<Laboratory>> {
     const qs = params ? `?${buildQueryString(params)}` : '';
     const response = await apiClient.get(`/labs${qs}`);
     return LabsListSchema.parse(response) as unknown as Paginated<Laboratory>;
